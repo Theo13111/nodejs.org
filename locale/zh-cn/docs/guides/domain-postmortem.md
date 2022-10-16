@@ -20,7 +20,9 @@ const c = require('./c');
 
 // module b.js
 const d = require('domain').create();
-d.on('error', () => { /* silence everything */ });
+d.on('error', () => {
+  /* silence everything */
+});
 d.enter();
 
 // module c.js
@@ -40,10 +42,14 @@ const net = require('net');
 const d = domain.create();
 d.on('error', (err) => console.error(err.message));
 
-d.run(() => net.createServer((c) => {
-  c.end();
-  c.write('bye');
-}).listen(8000));
+d.run(() =>
+  net
+    .createServer((c) => {
+      c.end();
+      c.write('bye');
+    })
+    .listen(8000)
+);
 ```
 
 即便通过 `d.remove(c)` 手动移除连接也不会阻止连接错误不会自动捕获。
@@ -57,17 +63,19 @@ const d = domain.create();
 d.on('error', () => console.error('d intercepted an error'));
 
 d.run(() => {
-  const server = net.createServer((c) => {
-    const e = domain.create(); // No 'error' handler being set.
-    e.run(() => {
-      // This will not be caught by d's error handler.
-      setImmediate(() => {
-        throw new Error('thrown from setImmediate');
+  const server = net
+    .createServer((c) => {
+      const e = domain.create(); // No 'error' handler being set.
+      e.run(() => {
+        // This will not be caught by d's error handler.
+        setImmediate(() => {
+          throw new Error('thrown from setImmediate');
+        });
+        // Though this one will bubble to d's error handler.
+        throw new Error('immediately thrown');
       });
-      // Though this one will bubble to d's error handler.
-      throw new Error('immediately thrown');
-    });
-  }).listen(8080);
+    })
+    .listen(8080);
 });
 ```
 
@@ -84,21 +92,25 @@ d.run(() => {
 ```js
 const d1 = domain.create();
 d1.foo = true; // custom member to make more visible in console
-d1.on('error', (er) => { /* handle error */ });
+d1.on('error', (er) => {
+  /* handle error */
+});
 
-d1.run(() => setTimeout(() => {
-  const d2 = domain.create();
-  d2.bar = 43;
-  d2.on('error', (er) => console.error(er.message, domain._stack));
-  d2.run(() => {
-    setTimeout(() => {
+d1.run(() =>
+  setTimeout(() => {
+    const d2 = domain.create();
+    d2.bar = 43;
+    d2.on('error', (er) => console.error(er.message, domain._stack));
+    d2.run(() => {
       setTimeout(() => {
-        throw new Error('outer');
+        setTimeout(() => {
+          throw new Error('outer');
+        });
+        throw new Error('inner');
       });
-      throw new Error('inner');
     });
-  });
-}));
+  })
+);
 ```
 
 即使在域实例被用于本地存储的情况下，使得对资源的访问仍可用，仍然没有办法允许错误从 `d2` 继续传播到 `d1`。快速检查可以告诉我们简单地从 `d2` 域 `'错误'` 处理程序中抛出将允许 `d1` 捕获异常并执行它自己的错误处理程序。虽然不是这种情况。在检查 `domain._stack` 时，您会看到堆栈只包含 `d2` 。
@@ -113,10 +125,9 @@ d1.run(() => setTimeout(() => {
 'use strict';
 
 const domain = require('domain');
-const EE = require('events');
+const EventEmitter = require('events');
 const fs = require('fs');
 const net = require('net');
-const util = require('util');
 const print = process._rawDebug;
 
 const pipeList = [];
@@ -127,56 +138,63 @@ let uid = 0;
 
 // Setting up temporary resources
 const buf = Buffer.alloc(FILESIZE);
-for (let i = 0; i < buf.length; i++)
-  buf[i] = ((Math.random() * 1e3) % 78) + 48; // Basic ASCII
+for (let i = 0; i < buf.length; i++) buf[i] = ((Math.random() * 1e3) % 78) + 48; // Basic ASCII
 fs.writeFileSync(FILENAME, buf);
 
-function ConnectionResource(c) {
-  EE.call(this);
-  this._connection = c;
-  this._alive = true;
-  this._domain = domain.create();
-  this._id = Math.random().toString(32).substr(2).substr(0, 8) + (++uid);
+class ConnectionResource extends EventEmitter {
+  constructor(c) {
+    super();
 
-  this._domain.add(c);
-  this._domain.on('error', () => {
+    this._connection = c;
+    this._alive = true;
+    this._domain = domain.create();
+    this._id = Math.random().toString(32).substr(2).substr(0, 8) + ++uid;
+
+    this._domain.add(c);
+    this._domain.on('error', () => {
+      this._alive = false;
+    });
+  }
+
+  end(chunk) {
     this._alive = false;
-  });
+    this._connection.end(chunk);
+    this.emit('end');
+  }
+
+  isAlive() {
+    return this._alive;
+  }
+
+  id() {
+    return this._id;
+  }
+
+  write(chunk) {
+    this.emit('data', chunk);
+    return this._connection.write(chunk);
+  }
 }
-util.inherits(ConnectionResource, EE);
-
-ConnectionResource.prototype.end = function end(chunk) {
-  this._alive = false;
-  this._connection.end(chunk);
-  this.emit('end');
-};
-
-ConnectionResource.prototype.isAlive = function isAlive() {
-  return this._alive;
-};
-
-ConnectionResource.prototype.id = function id() {
-  return this._id;
-};
-
-ConnectionResource.prototype.write = function write(chunk) {
-  this.emit('data', chunk);
-  return this._connection.write(chunk);
-};
 
 // Example begin
-net.createServer((c) => {
-  const cr = new ConnectionResource(c);
+net
+  .createServer((c) => {
+    const cr = new ConnectionResource(c);
 
-  const d1 = domain.create();
-  fs.open(FILENAME, 'r', d1.intercept((fd) => {
-    streamInParts(fd, cr, 0);
-  }));
+    const d1 = domain.create();
+    fs.open(
+      FILENAME,
+      'r',
+      d1.intercept((fd) => {
+        streamInParts(fd, cr, 0);
+      })
+    );
 
-  pipeData(cr);
+    pipeData(cr);
 
-  c.on('close', () => cr.end());
-}).listen(8080);
+    c.on('close', () => cr.end());
+  })
+  .listen(8080);
 
 function streamInParts(fd, cr, pos) {
   const d2 = domain.create();
@@ -185,24 +203,33 @@ function streamInParts(fd, cr, pos) {
     print('d2 error:', er.message);
     cr.end();
   });
-  fs.read(fd, Buffer.alloc(10), 0, 10, pos, d2.intercept((bRead, buf) => {
-    if (!cr.isAlive()) {
-      return fs.close(fd);
-    }
-    if (cr._connection.bytesWritten < FILESIZE) {
-      // Documentation says callback is optional, but doesn't mention that if
-      // the write fails an exception will be thrown.
-      const goodtogo = cr.write(buf);
-      if (goodtogo) {
-        setTimeout(() => streamInParts(fd, cr, pos + bRead), 1000);
-      } else {
-        cr._connection.once('drain', () => streamInParts(fd, cr, pos + bRead));
+  fs.read(
+    fd,
+    Buffer.alloc(10),
+    0,
+    10,
+    pos,
+    d2.intercept((bRead, buf) => {
+      if (!cr.isAlive()) {
+        return fs.close(fd);
       }
-      return;
-    }
-    cr.end(buf);
-    fs.close(fd);
-  }));
+      if (cr._connection.bytesWritten < FILESIZE) {
+        // Documentation says callback is optional, but doesn't mention that if
+        // the write fails an exception will be thrown.
+        const goodtogo = cr.write(buf);
+        if (goodtogo) {
+          setTimeout(() => streamInParts(fd, cr, pos + bRead), 1000);
+        } else {
+          cr._connection.once('drain', () =>
+            streamInParts(fd, cr, pos + bRead)
+          );
+        }
+        return;
+      }
+      cr.end(buf);
+      fs.close(fd);
+    })
+  );
 }
 
 function pipeData(cr) {
@@ -244,9 +271,8 @@ process.on('exit', () => {
       fs.unlinkSync(pipeList[i]);
     }
     fs.unlinkSync(FILENAME);
-  } catch (e) { }
+  } catch (e) {}
 });
-
 ```
 
 * 当一个新的连接发生时，同时也发生：
@@ -274,18 +300,20 @@ process.on('exit', () => {
 const domain = require('domain');
 const net = require('net');
 
-const server = net.createServer((c) => {
-  // Use a domain to propagate data across events within the
-  // connection so that we don't have to pass arguments
-  // everywhere.
-  const d = domain.create();
-  d.data = { connection: c };
-  d.add(c);
-  // Mock class that does some useless async data transformation
-  // for demonstration purposes.
-  const ds = new DataStream(dataTransformed);
-  c.on('data', (chunk) => ds.data(chunk));
-}).listen(8080, () => console.log('listening on 8080'));
+const server = net
+  .createServer((c) => {
+    // Use a domain to propagate data across events within the
+    // connection so that we don't have to pass arguments
+    // everywhere.
+    const d = domain.create();
+    d.data = { connection: c };
+    d.add(c);
+    // Mock class that does some useless async data transformation
+    // for demonstration purposes.
+    const ds = new DataStream(dataTransformed);
+    c.on('data', (chunk) => ds.data(chunk));
+  })
+  .listen(8080, () => console.log('listening on 8080'));
 
 function dataTransformed(chunk) {
   // FAIL! Because the DataStream instance also created a
@@ -294,31 +322,33 @@ function dataTransformed(chunk) {
   domain.active.data.connection.write(chunk);
 }
 
-function DataStream(cb) {
-  this.cb = cb;
-  // DataStream wants to use domains for data propagation too!
-  // Unfortunately this will conflict with any domain that
-  // already exists.
-  this.domain = domain.create();
-  this.domain.data = { inst: this };
-}
+class DataStream {
+  constructor(cb) {
+    this.cb = cb;
+    // DataStream wants to use domains for data propagation too!
+    // Unfortunately this will conflict with any domain that
+    // already exists.
+    this.domain = domain.create();
+    this.domain.data = { inst: this };
+  }
 
-DataStream.prototype.data = function data(chunk) {
-  // This code is self contained, but pretend it's a complex
-  // operation that crosses at least one other module. So
-  // passing along "this", etc., is not easy.
-  this.domain.run(() => {
-    // Simulate an async operation that does the data transform.
-    setImmediate(() => {
-      for (let i = 0; i < chunk.length; i++)
-        chunk[i] = ((chunk[i] + Math.random() * 100) % 96) + 33;
-      // Grab the instance from the active domain and use that
-      // to call the user's callback.
-      const self = domain.active.data.inst;
-      self.cb(chunk);
+  data(chunk) {
+    // This code is self contained, but pretend it's a complex
+    // operation that crosses at least one other module. So
+    // passing along "this", etc., is not easy.
+    this.domain.run(() => {
+      // Simulate an async operation that does the data transform.
+      setImmediate(() => {
+        for (let i = 0; i < chunk.length; i++)
+          chunk[i] = ((chunk[i] + Math.random() * 100) % 96) + 33;
+        // Grab the instance from the active domain and use that
+        // to call the user's callback.
+        const self = domain.active.data.inst;
+        self.cb(chunk);
+      });
     });
-  });
-};
+  }
+}
 ```
 
 以上表明，尝试使用一个以上的异步 API 借助域来传播数据是困难的。这个例子是固定假设通过在 `DataStream` 构造函数中赋值 `parent: domain.active`。然后通过 `domain.active = domain.active.data.parent` 在用户的回调函数被调用前恢复它。 `DataStream` 的实例化`'连接'`回调必须在 `d.run()` 中运行，而不是简单地使用 `d.add(c)`，否则将没有活动域。

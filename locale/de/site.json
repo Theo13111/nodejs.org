@@ -38,22 +38,6 @@
     "governance": {
       "link": "about/governance",
       "text": "Governance"
-    },
-    "workinggroups": {
-      "link": "about/working-groups",
-      "text": "Arbeitskreise"
-    },
-    "releases": {
-      "link": "about/releases",
-      "text": "Versionen"
-    },
-    "resources": {
-      "link": "about/resources",
-      "text": "Ressourcen"
-    },
-    "trademark": {
-      "link": "about/trademark",
-      "text": "Trademark"
     }
   },
   "download": {
@@ -108,12 +92,12 @@
       "text": "Mitwirken"
     },
     "conduct": {
-      "link": "https://github.com/nodejs/node/blob/master/doc/guides/contributing/code-of-conduct.md",
+      "link": "https://github.com/nodejs/node/blob/main/doc/contributing/code-of-conduct.md",
       "text": "Verhaltenskodex"
     }
   },
   "security": {
-    "link": "security",
+    "link": "https://github.com/nodejs/node/blob/HEAD/SECURITY.md#security",
     "text": "Sicherheit"
   },
   "blog": {
