@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@heroicons/react": "~2.1.1",
-    "@mdx-js/mdx": "^3.0.0",
+    "@mdx-js/mdx": "^3.0.1",
     "@nodevu/core": "~0.1.0",
     "@radix-ui/react-accessible-icon": "^1.0.3",
     "@radix-ui/react-avatar": "^1.0.4",
