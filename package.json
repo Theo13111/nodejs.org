@@ -70,7 +70,7 @@
     "postcss": "~8.4.30",
     "postcss-calc": "~9.0.1",
     "postcss-import": "~15.1.0",
-    "postcss-mixins": "~9.0.4",
+    "postcss-mixins": "~11.0.0",
     "postcss-simple-vars": "~7.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
