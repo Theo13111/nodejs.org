@@ -64,7 +64,7 @@
     "gray-matter": "~4.0.3",
     "husky": "8.0.3",
     "lint-staged": "15.2.0",
-    "next": "~14.0.3",
+    "next": "~14.2.10",
     "next-intl": "~3.4.0",
     "next-themes": "~0.2.1",
     "postcss": "~8.4.30",
