@@ -26,7 +26,7 @@
     "@node-core/ui-components": "*",
     "@node-core/website-i18n": "*",
     "@nodevu/core": "0.3.0",
-    "@orama/react-components": "^0.6.4",
+    "@orama/react-components": "^0.8.0",
     "@oramacloud/client": "^2.1.4",
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
