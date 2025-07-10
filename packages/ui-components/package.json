@@ -68,7 +68,7 @@
     "stylelint-selector-bem-pattern": "4.0.1",
     "tsx": "^4.20.3",
     "typescript": "catalog:",
-    "typescript-eslint": "~8.35.1"
+    "typescript-eslint": "~8.36.0"
   },
   "imports": {
     "#ui/*": [
