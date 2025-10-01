@@ -41,7 +41,7 @@
     "classnames": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "~4.1.11",
+    "@tailwindcss/postcss": "~4.1.13",
     "postcss-calc": "^10.1.1",
     "tailwindcss": "catalog:",
     "@storybook/addon-styling-webpack": "^2.0.0",
