@@ -18,12 +18,12 @@
   },
   "dependencies": {
     "@flarelabs-net/wrangler-build-time-fs-assets-polyfilling": "^0.0.1",
-    "@opennextjs/cloudflare": "^1.20.13",
-    "@sentry/cloudflare": "^11.9.0",
+    "@opennextjs/cloudflare": "^1.20.14",
+    "@sentry/cloudflare": "^11.10.0",
     "@typescript/vfs": "^1.6.5",
     "twoslash": "^0.3.9",
     "typescript": "catalog:",
-    "wrangler": "^4.152.0"
+    "wrangler": "^4.155.0"
   },
   "peerDependencies": {
     "next": "catalog:"
